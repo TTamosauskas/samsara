@@ -20,9 +20,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat bootstrap/chunk-*.txt | base64 -d > /tmp/samsara-source.tar.gz
+          cat bootstrap/chunk-*.txt | base64 -d > /tmp/samsara-source.tar.xz
+          echo '55894f1ed903b8e77d957bf5a9c28f1a81e010714482ba9b2261865ea810c77d  /tmp/samsara-source.tar.xz' | sha256sum -c -
           rm -rf bootstrap
-          tar -xzf /tmp/samsara-source.tar.gz -C .
+          tar -xJf /tmp/samsara-source.tar.xz -C .
           rm -f .github/workflows/bootstrap-modular.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
