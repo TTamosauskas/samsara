@@ -1,0 +1,9 @@
+{
+  "name": "samsara",
+  "private": true,
+  "version": "314.12.0",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "npm run build && node --check dist/assets/js/app.js"
+  }
+}

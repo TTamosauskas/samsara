@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<title>Samsara v314.12.0 — Leitor e Editor de Aventuras</title>
+<link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+<div id="landing" class="screen landing">
+  <div id="legacySouls" class="legacy-souls legacy-souls-back" aria-hidden="true"></div>
+  <div id="legacySoulsFront" class="legacy-souls legacy-souls-front" aria-hidden="true"></div>
+  <div class="landing-card">
+    <div class="landing-brand">
+      <img class="landing-symbol" data-samsara-logo alt="Símbolo de Samsara" draggable="false" />
+      <h1>Samsara</h1>
+      <p class="landing-brand-subtitle">Quem você vai viver agora?</p>
+    </div>
+    <div class="landing-actions">
+      <div id="landingRoleOptions" class="landing-role-options" aria-label="Escolha como viver Samsara">
+        <button id="landingHeroRole" class="landing-role-card" type="button">
+          <span class="landing-role-symbol" aria-hidden="true">⚔️</span>
+          <strong>Carregar Aventura</strong>
+        </button>
+      </div>
+
+      <div class="landing-test-tools" aria-label="Ferramentas temporárias de teste">
+        <button id="clearSamsaraCacheBtn" class="landing-cache-clear" type="button" title="Remove dados locais do Samsara para reiniciar os testes" data-temporary="true">Limpar Cache</button>
+      </div>
+
+      <input id="creationModeCheck" class="hidden" type="checkbox" tabindex="-1" aria-hidden="true" />
+      <input id="fileInput" type="file" accept=".md,text/markdown,text/plain" />
+    </div>
+  </div>
+</div>
+
+<div id="climateFx" class="climate-fx hidden" aria-hidden="true"></div>
+<div id="stateFloat" class="state-float hidden" aria-live="polite"></div>
+<div id="app" class="screen app hidden">
+  <div id="terrainAtmosphereCurrent" class="terrain-atmosphere current" aria-hidden="true"></div>
+  <div id="terrainAtmosphereNext" class="terrain-atmosphere next" aria-hidden="true"></div>
+  <div id="terrainBackdropCurrent" class="terrain-backdrop current" aria-hidden="true"></div>
+  <div id="terrainBackdropNext" class="terrain-backdrop next" aria-hidden="true"></div>
+  <header class="topbar">
+    <div class="top-inner">
+      <div class="title-row">
+        <div id="heroPortraitFrame" class="hero-portrait-frame hidden" role="button" tabindex="0" aria-label="Ver estado da jornada"><img id="heroPortrait" class="hero-portrait" alt="Retrato do personagem" /></div>
+        <div style="flex:1;min-width:0"><h1 id="bookTitle">Livro Jogo</h1><span id="classChip" class="class-chip"></span><div id="timeStatus" class="time-status hidden"></div></div>
+        <div class="editor-tools">
+          <button id="titleEditBtn" class="icon-btn" aria-label="Dados da Aventura" title="Dados da Aventura">✏️</button>
+          <button id="rawBtn" class="icon-btn" aria-label="Editar Markdown" title="Editar Markdown">📝</button>
+          <button id="validationBtn" class="icon-btn" aria-label="Validação da Aventura" title="Validação da Aventura">🔎</button>
+        </div>
+        <div class="header-audio-actions" aria-label="Configurações">
+          <button id="settingsBtn" class="icon-btn settings-btn hidden" type="button" aria-expanded="false" aria-controls="settingsPopover" aria-label="Configurações" title="Configurações">⚙️</button>
+        </div>
+        <button id="modeBtn" class="icon-btn" aria-label="Editar" title="Editar">✏️</button>
+      </div>
+      <div class="stats" aria-label="Atributos">
+        <div class="stat"><b>APTIDÃO</b><span id="skillStat">–</span></div>
+        <div class="stat"><b>FORTUNA</b><span id="luckStat">–</span></div>
+        <div class="stat magic"><b id="magicStatLabel">SANIDADE</b><span id="magicStat">–</span></div>
+        <div class="stat energy"><b>VIDA</b><div class="stamina-value-row"><span id="staminaStat">–</span><small id="armorGuardStat" class="armor-guard-stat"></small></div></div>
+        <button id="inventoryBtn" class="inventory-btn" type="button" aria-label="Abrir equipamento" aria-haspopup="dialog" aria-expanded="false" title="Equipamento">🎒</button>
+      </div>
+    </div>
+  </header>
+  <button id="voiceFloatBtn" class="voice-float-btn" type="button" aria-pressed="false" aria-label="Falar agora" title="Falar agora" hidden>🎙️</button>
+
+  <main class="main">
+    <div id="bookCover" class="book-cover" role="button" tabindex="0" aria-label="Abrir a aventura"><div class="book-cover-inner"><img id="bookCoverImage" class="hero-opening-image" alt="Retrato do personagem" /><div id="bookCoverText" class="hero-opening-text"></div></div></div>
+    <section id="currentSectionCard" class="section-card">
+      <button id="editorBackBtn" class="editor-back" type="button" aria-label="Voltar à seção anterior" title="Voltar à seção anterior">←</button>
+      <img id="sectionImage" class="section-image hidden" alt="Ilustração da seção" />
+      <img id="dialoguePortrait" class="hidden" alt="Retrato do personagem" />
+      <div id="dialogueCharacterCaption" class="dialogue-character-caption hidden"></div>
+      <div class="section-body">
+        <div id="playContent" class="play-content">
+          <div id="dialogueCharacterName" class="dialogue-character-name hidden"></div>
+          <div id="storyText" class="story-text" lang="pt-BR"></div>
+          <div id="effects" class="effects hidden"></div>
+          <div id="sectionActions" class="section-actions hidden"></div>
+        </div>
+
+        <div id="npcBox" class="npc-box hidden"></div>
+        <div id="combatBox" class="combat-stack hidden"></div>
+
+        <div id="editorPanel" class="editor-panel">
+          <section id="scenePanel" class="scene-panel" aria-label="Cena da seção">
+            <button id="scenePanelToggle" class="scene-panel-head" type="button" aria-expanded="true">
+              <span class="scene-panel-title">Cena</span>
+              <span id="scenePanelSummary" class="scene-panel-summary">neutro · normal</span>
+              <span class="scene-panel-chevron" aria-hidden="true">⌃</span>
+            </button>
+            <div id="scenePanelBody" class="scene-panel-body">
+              <div id="imageEditorThumbs" class="image-editor-thumbs hidden"></div>
+              <div class="scene-panel-controls">
+                <div class="section-media-links">
+                  <button id="addImageLink" class="image-editor-link" type="button">🖼 Adicionar imagem</button>
+                  <button id="addMusicLink" class="image-editor-link" type="button">♫ Trilha</button>
+                </div>
+                <div id="imageEditor" class="image-editor hidden">
+                  <div class="image-editor-options"><span class="legacy-dialogue-editor">
+                    <label class="dialogue-editor-toggle"><input id="imageAiCheck" type="checkbox" /><span>ilustrar com IA</span></label>
+                    <label class="dialogue-editor-toggle"><input id="dialogueCheck" type="checkbox" /><span>Diálogo</span></label>
+                  </span></div>
+                  <label class="media-field-label" for="imageUrlInput">Imagem da seção</label>
+                  <div class="section-image-url-row"><button id="clearSectionImageBtn" class="media-clear-btn" type="button" aria-label="Remover imagem da seção" title="Remover imagem da seção">❌</button><input id="imageUrlInput" type="url" placeholder="https://…" /><input id="dialogueNameInput" class="dialogue-name-input legacy-dialogue-editor" type="text" placeholder="Legenda" /></div>
+                  <label class="media-field-label legacy-dialogue-editor" for="portraitUrlInput">Retrato do diálogo</label>
+                  <div class="portrait-url-row legacy-dialogue-editor"><button id="clearPortraitBtn" class="media-clear-btn" type="button" aria-label="Remover retrato" title="Remover retrato">❌</button><input id="portraitUrlInput" type="url" placeholder="https://… (opcional; usado como retrato em diálogos)" /></div>
+                  <div id="opponentImageInputs" class="opponent-image-inputs hidden"></div>
+                  <div class="image-history-row"><button id="previousImagesBtn" class="previous-image-trigger hidden" type="button" aria-haspopup="dialog">imagens anteriores</button></div>
+                </div>
+                <div id="sectionMusicEditor" class="image-editor hidden">
+                  <div class="music-history-row"><button id="previousTracksBtn" class="previous-track-trigger hidden" type="button" aria-haspopup="dialog">trilhas anteriores</button></div>
+                  <div class="media-url-row"><button id="clearSectionMusicBtn" class="media-clear-btn" type="button" aria-label="Remover trilha sonora" title="Remover trilha sonora">❌</button><input id="sectionMusicUrlInput" type="url" placeholder="https://www.youtube.com/watch?v=vZwvPJwwe7M&amp;list=RDvZwvPJwwe7M" /></div>
+                </div>
+                <div class="scene-properties" aria-label="Ambientação da cena">
+                  <select id="terrainSelect" class="terrain-select" aria-label="Terreno">
+                    <option value="" disabled selected>terreno</option>
+                    <option value="neutro">neutro</option>
+                    <option value="personalizado">personalisado</option>
+                    <option value="floresta">floresta</option>
+                    <option value="montanha">montanha</option>
+                    <option value="tundra_nevada">tundra nevada</option>
+                    <option value="pantano">pântano</option>
+                    <option value="deserto">deserto</option>
+                    <option value="cidade_medieval">cidade medieval</option>
+                    <option value="taberna">taberna</option>
+                    <option value="masmorra">masmorra</option>
+                    <option value="cidade_contemporanea">cidade contemporânea</option>
+                    <option value="ruinas">ruínas</option>
+                    <option value="castelo_interior">castelo (interior)</option>
+                    <option value="cemiterio">cemitério</option>
+                    <option value="aquatico">aquático</option>
+                    <option value="cidade_cyberpunk">cidade cyberpunk</option>
+                    <option value="vulcanico">vulcânico</option>
+                    <option value="pos_apocaliptico">pós-apocalíptico</option>
+                    <option value="espaco_sideral">espaço sideral</option>
+                    <option value="nave_espacial">nave espacial</option>
+                    <option value="planeta_alienigena">planeta alienígena</option>
+                  </select>
+                  <input id="customTerrainInput" class="custom-terrain-input hidden" type="text" placeholder="descreva o ambiente em poucas palavras" aria-label="Descrição do terreno personalizado" />
+                  <select id="climateSelect" class="climate-select" aria-label="Clima">
+                    <option value="" disabled selected>clima</option>
+                    <option value="normal">normal</option>
+                    <option value="chuva">chuvoso</option>
+                    <option value="neblina">nublado</option>
+                    <option value="nevado">nevado</option>
+                    <option value="terremoto">terremoto</option>
+                    <option value="submerso">submerso</option>
+                    <option value="ventania">ventos fortes</option>
+                    <option value="incendio">pegando fogo</option>
+                    <option value="magico">mágico</option>
+                    <option value="assombrado">assombrado</option>
+                    <option value="divino">divino</option>
+                    <option value="eletrico">elétrico</option>
+                    <option value="tumultuado">tumultuado</option>
+                  </select>
+                  <div class="lighting-editor-row"><label class="lighting-editor-control"><input id="lightingCheck" type="checkbox" /><span id="lightingLabel" class="lighting-label">iluminação</span></label><div id="lightingRangeWrap" class="lighting-range-wrap hidden" aria-label="Iluminação da seção"><span class="lighting-end" aria-hidden="true">☀️</span><input id="lightingRange" type="range" min="0" max="100" step="2" value="50" aria-label="Nível de iluminação" /><span class="lighting-end" aria-hidden="true">⬛</span></div></div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <div class="section-editor-wrap">
+            <div class="text-editor-toolbar">
+              <span class="text-editor-label">Texto da seção</span>
+              <div class="editor-insert-actions" aria-label="Ferramentas do texto">
+                <button id="commerceMarkerBtn" class="editor-insert-btn commerce-marker-btn hidden" type="button" title="Habilitar Comércio" aria-label="Habilitar Comércio">🛒</button>
+                <button id="combatConfigBtn" class="editor-insert-btn combat-config-btn" type="button" title="Configurar Combate" aria-label="Configurar Combate">⚔️</button>
+                <button id="npcConfigBtn" class="editor-insert-btn npc-config-btn" type="button" title="Configurar NPC" aria-label="Configurar NPC">👤</button>
+                <button id="insertMarkerBtn" class="editor-insert-btn" type="button" title="Inserir marcação" aria-label="Inserir marcação">➕</button>
+              </div>
+            </div>
+            <div id="npcEditorSummary" class="npc-editor-inline-summary hidden"></div>
+            <textarea id="sectionTextEditor" placeholder="Escreva o texto desta seção…"></textarea>
+          </div>
+          <div id="alternativesEditor" class="alternatives-editor"></div>
+          <button id="addAlternativeBtn" class="add-alt">+ adicionar alternativa</button>
+        </div>
+      </div>
+    </section>
+<div id="endingPanel" class="ending-panel hidden" aria-live="polite">
+      <div class="ending-ornament" aria-hidden="true">✦</div>
+      <div id="endingTitle" class="ending-title">FIM</div>
+      <div id="endingSummary" class="ending-summary"></div>
+      <div class="ending-actions">
+        <button id="endingRestartBtn" class="primary-btn" type="button">Jogar novamente</button>
+        <button id="endingAnotherBtn" class="secondary-btn" type="button">Escolher outra aventura</button>
+      </div>
+    </div>
+    <div id="choicesDock" class="choices-dock"><div id="choices" class="choices"></div></div>
+    <div id="bookSubpageIndicator" class="book-subpage-indicator hidden" aria-hidden="true"></div>
+    <button id="bookPagePrevZone" class="book-page-zone prev hidden" type="button" aria-label="Página anterior" title="Página anterior">‹</button>
+    <button id="bookPageNextZone" class="book-page-zone next hidden" type="button" aria-label="Página seguinte" title="Página seguinte">›</button>
+    <div id="bookPageTurnHint" class="book-page-turn-hint" aria-hidden="true">toque para virar</div>
+    <div id="bookAdventureTitle" class="book-adventure-title" aria-hidden="true"></div>
+    <div id="bookPageNumber" class="book-page-number" aria-hidden="true"></div>
+  </main>
+  <div id="readingProgress" class="reading-progress hidden" role="progressbar" aria-label="Progresso da aventura" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span class="reading-progress-caption">progresso:</span><span class="reading-progress-line"><span class="reading-progress-track"></span><span id="readingProgressDot" class="reading-progress-dot"></span></span></div>
+</div>
+<div id="dayStatusTooltip" class="day-status-tooltip hidden" role="tooltip"></div>
+<div id="creationHeroBackdrop" class="creation-hero-backdrop hidden" aria-hidden="true"></div>
+<aside id="heroEditorTooltip" class="hero-editor-tooltip hidden" role="dialog" aria-modal="false" aria-labelledby="heroEditorTitle">
+  <div class="hero-editor-tooltip-head"><h3 id="heroEditorTitle">Personagem inicial</h3><button id="heroEditorClose" class="hero-editor-tooltip-close" type="button" aria-label="Fechar">✕</button></div>
+  <div class="hero-editor-grid">
+    <label>APTIDÃO<input id="heroEditorSkill" type="number" min="0" step="1" inputmode="numeric" /></label>
+    <label>FORTUNA<input id="heroEditorLuck" type="number" min="0" step="1" inputmode="numeric" /></label>
+    <label>SANIDADE<input id="heroEditorMagic" type="number" min="0" step="1" inputmode="numeric" /></label>
+    <label>VIDA<input id="heroEditorStamina" type="number" min="0" step="1" inputmode="numeric" /></label>
+    <label>Nome<input id="heroEditorName" type="text" maxlength="40" /></label>
+    <label>Idade<input id="heroEditorAge" type="number" min="1" max="999" step="1" inputmode="numeric" placeholder="33" /></label>
+    <label>Gênero<select id="heroEditorGender"><option value="M">Masculino</option><option value="F">Feminino</option></select></label>
+    <label>Raça<select id="heroEditorRace"><option value="humana">Raça humana</option><option value="élfica">Raça élfica</option><option value="anã">Raça anã</option><option value="hobbit">Raça hobbit</option><option value="orc">Raça orc</option></select></label>
+    <label>Classe<select id="heroEditorClass"><option value="GUERREIRO">Classe Guerreira</option><option value="MAGO">Classe Arcana</option><option value="LADRAO">Classe Ladina</option><option value="HEROI">Classe Heróica</option></select></label>
+    <label class="hero-editor-wide">Descrição<input id="heroEditorDescription" type="text" maxlength="220" /></label>
+    <label class="hero-editor-wide">Ocupação<input id="heroEditorOccupation" type="text" maxlength="48" /></label>
+    <label class="hero-editor-wide">URL da imagem<input id="heroEditorImage" type="url" inputmode="url" /></label>
+  </div>
+  <div class="hero-editor-tooltip-actions"><button id="heroEditorCancel" class="secondary-btn" type="button">Cancelar</button><button id="heroEditorSave" class="primary-btn" type="button">Salvar</button></div>
+</aside>
+<div id="dialogueImageViewer" class="dialogue-image-viewer hidden" role="dialog" aria-modal="true" aria-label="Imagem ampliada"><div class="dialogue-image-viewer-stage"><img id="dialogueImageViewerImg" alt="" /><img id="dialogueImageViewerImgNext" alt="" aria-hidden="true" /></div><div id="dialogueImageViewerCaption" class="dialogue-image-viewer-caption"></div></div>
+
+<button id="saveBookmarkBtn" class="save-bookmark hidden" type="button" aria-label="Salvar aventura" title="Salvar aventura">
+  <svg viewBox="0 0 64 96" aria-hidden="true" focusable="false"><path class="bookmark-shape" d="M8 0H56V86L32 61L8 86Z" /></svg>
+</button>
+
+<div id="toastStack" class="toast-stack"></div>
+<audio id="musicAudio" loop preload="auto" playsinline></audio>
+<audio id="pageFlipAudio" preload="auto" playsinline src="https://www.soundjay.com/misc_c2026/page-flip-02.mp3"></audio>
+<iframe id="musicFrame" class="music-frame" title="Trilha sonora" allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+<div id="screenFx" class="screen-fx"><div id="fxMessage" class="fx-message"></div></div>
+<div id="dreamOverlay" class="dream-overlay hidden" aria-live="polite"><div class="dream-card"><h2 class="dream-title">Sonhando..</h2><div id="dreamStory" class="dream-story"></div><div class="dream-actions"><button id="dreamWakeBtn" class="choice-btn" type="button">Hora de Acordar...</button></div></div></div><div id="sleepFadeLayer" class="sleep-fade-layer" aria-hidden="true"></div>
+
+<div id="loadingOverlay" class="loading-overlay hidden" role="status" aria-live="polite">
+  <div class="loading-card"><div class="loading-icon">🗺️</div><h2 class="loading-title">Preparando o mundo</h2><div id="loadingPhrase" class="loading-phrase">planejando aventura…</div><div class="loading-track"><div id="loadingBar" class="loading-bar"></div></div></div>
+</div>
+
+<div id="introOverlay" class="intro-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div class="intro-card">
+    <div class="intro-content">
+      <div class="intro-kicker">SUA PRÓXIMA AVENTURA</div>
+      <h2 id="introTitle" class="intro-title">Livro Jogo</h2>
+      <p id="introDescription" class="intro-description"></p>
+      <div class="intro-time"><span>Tempo estimado de jogo: <span id="introTime">—</span></span></div>
+      <div class="intro-experience">
+        <div class="intro-experience-summary">
+          <span id="introExperienceSummary" class="intro-experience-current">Adepto</span>
+          <button id="introExperienceToggle" class="intro-experience-toggle" type="button" aria-expanded="false" aria-controls="introExperiencePanel">Mudar experiência</button>
+        </div>
+        <div id="introExperiencePanel" class="intro-experience-panel hidden">
+          <div class="landing-section">
+            <div class="landing-section-label">Desafio</div>
+            <div class="difficulty-options" role="radiogroup" aria-label="Dificuldade">
+              <label class="difficulty-option"><input type="radio" name="gameDifficulty" value="easy"><strong>Neófito</strong><small>Fácil · conte-me uma história</small></label>
+              <label class="difficulty-option"><input type="radio" name="gameDifficulty" value="heroic" checked><strong>Adepto</strong><small>Heróico · aceito desafios</small></label>
+              <label class="difficulty-option"><input type="radio" name="gameDifficulty" value="epic"><strong>Magister</strong><small>Épico · a experiência completa</small></label>
+            </div>
+          </div>
+          <label class="editor-mode-option"><input id="editorModeCheck" type="checkbox" /><span>modo editor</span></label>
+          <label id="tutorialReviewOption" class="tutorial-review-option hidden"><span>rever tutorial</span><input id="reviewTutorialCheck" type="checkbox" /></label>
+        </div>
+      </div>
+      <button id="introStartBtn" class="primary-btn intro-start">Viver esta história</button>
+    </div>
+  </div>
+</div>
+
+<div id="heroOverlay" class="hero-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="heroQuestion">
+  <div class="hero-card">
+    <div id="heroIdentityStage">
+      <div class="hero-roll-label">Seu personagem</div>
+      <h2 id="heroQuestion" class="hero-title">Quem você será?</h2>
+      <p class="hero-sub">Dê um nome a quem vai atravessar esta aventura.</p>
+      <div class="hero-name-age-row">
+        <input id="heroNameInput" class="hero-name-input" type="text" maxlength="40" autocomplete="off" placeholder="seu nome" />
+      </div>
+      <div class="hero-gender-race-row">
+        <div class="hero-gender-field">
+          <div class="gender-row" role="radiogroup" aria-label="Gênero do personagem">
+            <label class="gender-option"><input type="radio" name="heroGender" value="M" /> masculino</label>
+            <label class="gender-option"><input type="radio" name="heroGender" value="F" /> feminino</label>
+          </div>
+        </div>
+        <div class="hero-race-field">
+          <select id="heroRaceInput" class="hero-race-select" aria-label="Raça do personagem">
+            <option value="humana" selected>raça humana</option>
+            <option value="élfica">raça élfica</option>
+            <option value="anã">raça anã</option>
+            <option value="hobbit">raça hobbit</option>
+            <option value="orc">raça orc</option>
+          </select>
+        </div>
+      </div>
+      <div class="hero-age-description-row">
+        <div class="hero-age-field"><label for="heroAgeInput">idade aparente</label><input id="heroAgeInput" class="hero-age-input" type="number" min="1" max="999" step="1" inputmode="numeric" aria-label="Idade aparente" placeholder="33" /></div>
+        <input id="heroDescriptionInput" class="hero-description-input" type="text" maxlength="220" autocomplete="off" placeholder="descrição (opcional)" aria-label="Descrição do personagem (opcional)" />
+      </div>
+      <div class="hero-identity-row">
+        <select id="heroClassSelect" class="class-select" aria-label="Qual o seu verbo?">
+          <option value="" selected>Qual o seu verbo?</option>
+          <option value="MAGO">Saber (classe Arcana)</option>
+          <option value="LADRAO">Querer (classe Ladina)</option>
+          <option value="GUERREIRO">Ousar (classe Guerreira)</option>
+          <option value="HEROI">Calar (classe Heróica)</option>
+        </select>
+        <input id="heroOccupationInput" class="hero-occupation-input" type="text" maxlength="48" autocomplete="off" placeholder="Ocupação" aria-label="Ocupação" />
+      </div>
+      <div id="classHelp" class="class-help">Escolha o verbo que define como seu herói entra na aventura.</div>
+      <button id="heroConfirmBtn" class="primary-btn hero-action">Criar alminha</button>
+    </div>
+    <div id="heroStatsStage" class="hidden">
+      <div class="hero-roll-label">Sorteando Estatística</div>
+      <h2 class="hero-title">O destino está nos dados</h2>
+      <p id="heroRollingText" class="hero-sub">Sete dados decidem o começo da sua lenda.</p>
+      <div id="heroDice" class="hero-dice" aria-label="Oito dados rolando"></div>
+      <div id="heroStatsReveal" class="hero-stats hidden">
+        <div class="hero-stat"><b>APTIDÃO</b><div class="hero-stat-value-row"><strong id="heroSkillReveal">—</strong><div class="hero-karma-inline hidden" data-karma-inline="skill"><button class="karma-minus hidden" type="button" data-karma-minus="skill" aria-label="Retirar ponto de APTIDÃO">−</button><button type="button" data-karma-plus="skill" aria-label="Adicionar ponto de APTIDÃO">+</button></div></div></div>
+        <div class="hero-stat"><b>FORTUNA</b><div class="hero-stat-value-row"><strong id="heroLuckReveal">—</strong><div class="hero-karma-inline hidden" data-karma-inline="luck"><button class="karma-minus hidden" type="button" data-karma-minus="luck" aria-label="Retirar ponto de FORTUNA">−</button><button type="button" data-karma-plus="luck" aria-label="Adicionar ponto de FORTUNA">+</button></div></div></div>
+        <div class="hero-stat"><b id="heroMagicLabel">SANIDADE</b><div class="hero-stat-value-row"><strong id="heroMagicReveal">—</strong><div class="hero-karma-inline hidden" data-karma-inline="magic"><button class="karma-minus hidden" type="button" data-karma-minus="magic" aria-label="Retirar ponto de SANIDADE">−</button><button type="button" data-karma-plus="magic" aria-label="Adicionar ponto de SANIDADE">+</button></div></div></div>
+        <div class="hero-stat"><b>VIDA</b><div class="hero-stat-value-row"><strong id="heroStaminaReveal">—</strong><div class="hero-karma-inline hidden" data-karma-inline="stamina"><button class="karma-minus hidden" type="button" data-karma-minus="stamina" aria-label="Retirar ponto de VIDA">−</button><button type="button" data-karma-plus="stamina" aria-label="Adicionar ponto de VIDA">+</button></div></div></div>
+      </div>
+      <div id="heroStartingMeta" class="hero-starting-meta hidden">
+        <div id="heroMagicAffinity" class="hero-starting-equipment"><span>🎒 Equipamento Inicial</span><strong id="heroStartingEquipmentReveal">—</strong></div>
+        <div id="heroStartingCurrency" class="hero-starting-currency"><span>🪙 <span id="heroCurrencyLabel">Moedas de Ouro</span></span><strong id="heroCurrencyReveal">—</strong></div>
+      </div>
+      <div id="heroKarmaOption" class="hero-karma-option hidden">
+        <label class="hero-karma-check-label"><input id="heroKarmaCheck" type="checkbox" /> <span id="heroKarmaLabelText">usar pontos kármicos</span></label>
+      </div>
+      <button id="heroBeginBtn" class="primary-btn hero-action hidden">Assim seja</button>
+      <div class="hero-roll-actions"><button id="heroRerollBtn" class="hero-reroll hidden" type="button">♻️ rolar outro</button></div>
+    </div>
+  </div>
+</div>
+
+<dialog id="tutorialWelcomeDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Bem-vindo à aventura</h2></div><p class="sleep-copy">Antes de começar, gostaria de ver um curto tutorial explicando como o sistema funciona?</p><div class="dialog-actions"><button id="tutorialSkipBtn" class="secondary-btn" type="button">Começar sem tutorial</button><button id="tutorialStartBtn" class="primary-btn" type="button">Ver tutorial</button></div></div></dialog>
+<div id="tutorialVeil" class="tutorial-veil hidden" aria-hidden="true"></div>
+<div id="tutorialTooltip" class="tutorial-tooltip hidden" role="dialog" aria-live="polite"><p id="tutorialTooltipText"></p><button id="tutorialNextBtn" class="tutorial-next" type="button">PROXIMO 1/5</button></div>
+<dialog id="tutorialFinishDialog"><div class="dialog-inner"><div class="dialog-head"><h2>É isso!</h2></div><p class="sleep-copy">Não falei que era rápido?</p><p class="sleep-copy">Deseja ocultar tutorial no futuro?</p><div class="tutorial-finish-options" role="radiogroup" aria-label="Ocultar tutorial no futuro"><label><input type="radio" name="tutorialHideFuture" value="yes"> sim</label><label><input type="radio" name="tutorialHideFuture" value="no"> não</label></div></div></dialog>
+
+<div id="rewardOverlay" class="reward-overlay hidden" role="dialog" aria-modal="true">
+  <div class="reward-card"><img id="rewardPortrait" class="reward-portrait hidden" alt=""><div id="rewardIcon" class="reward-icon">🎁</div><div id="rewardTitle" class="reward-title"></div><div id="rewardHeadline" class="reward-headline"></div><div id="rewardDetail" class="reward-detail"></div><button id="rewardContinueBtn" class="primary-btn">Continuar</button></div>
+</div>
+<div id="sanityOverlay" class="sanity-overlay hidden" role="dialog" aria-modal="true" aria-live="assertive">
+  <div id="sanityCard" class="sanity-card"><div id="sanityIcon" class="sanity-icon">🧠</div><div id="sanityTitle" class="sanity-title"></div><div id="sanityHeadline" class="sanity-headline"></div><div id="sanityDetail" class="sanity-detail"></div><div id="sanityStory" class="sanity-story hidden"></div><div id="sanityActions" class="sanity-actions"></div></div>
+</div>
+
+<dialog id="diceOverlay" class="dice-overlay hidden" aria-labelledby="diceTitle">
+  <div class="dice-card">
+    <button id="diceClose" class="dice-close" aria-label="Fechar">✕</button>
+    <div id="diceKicker" class="dice-kicker">ROLAGEM</div>
+    <div id="diceActionTitle" class="dice-action-title hidden"></div>
+    <div id="diceCombatDuel" class="dice-combat-duel hidden" aria-label="Combatentes">
+      <div class="dice-duelist"><div id="diceHeroFrame" class="dice-combat-portrait-frame"><img id="diceHeroPortrait" class="dice-combat-portrait" alt="Retrato do herói" /><span id="diceHeroPlaceholder" class="dice-combat-placeholder">?</span></div><strong id="diceHeroName"></strong><small><span id="diceHeroStatLabel">APTIDÃO</span> <b id="diceHeroSkill"></b></small></div>
+      <div class="dice-versus">x</div>
+      <div class="dice-duelist"><div id="diceOpponentFrame" class="dice-combat-portrait-frame"><img id="diceOpponentPortrait" class="dice-combat-portrait" alt="Retrato do oponente" /><span id="diceOpponentPlaceholder" class="dice-combat-placeholder">?</span></div><strong id="diceOpponentName"></strong><small><span id="diceOpponentStatLabel">APTIDÃO</span> <b id="diceOpponentSkill"></b></small></div>
+    </div>
+    <h2 id="diceTitle" class="dice-title"></h2>
+    <p id="diceLead" class="dice-lead"></p>
+    <div id="diceRow" class="dice-row"></div>
+    <div id="diceEquation" class="dice-equation"></div>
+    <div id="diceConsequence" class="dice-consequence"></div>
+    <div id="diceDetail" class="dice-detail"></div>
+    <button id="diceRollBtn" class="primary-btn dice-roll-btn">Rolar Dados</button>
+    <button id="diceContinueBtn" class="primary-btn dice-continue-btn">Continuar</button>
+  </div>
+</dialog>
+
+<aside id="inventoryDialog" class="inventory-dialog hidden" role="dialog" aria-modal="false" aria-labelledby="inventoryTitle"><div class="dialog-inner"><div class="dialog-head"><h2 id="inventoryTitle">Equipamento</h2></div><div id="loadMeter" class="load-meter"><div id="loadMeterFill" class="load-meter-fill"></div><div id="loadMeterText" class="load-meter-text">Carga 0/0</div></div><div class="inventory-summary"><div id="journalResource" class="resource-box journal-box"><span class="journal-box-icon" aria-hidden="true">📜</span><button id="journalBtn" class="journal-link" type="button" aria-haspopup="dialog" aria-controls="journalDialog" title="Abrir Registro da jornada">Diário</button></div><div class="resource-box gold-box"><strong id="goldCount" class="resource-count">🪙×0</strong><button id="faerieMarketLink" class="faerie-market-link" type="button">Mercado Faérico</button></div><div class="resource-box provisions"><strong id="provisionCount" class="resource-count">🍖×0</strong><button id="eatBtn" class="eat-btn">comer</button></div></div><div id="inventoryReadyNote" class="inventory-ready-note hidden"></div><div id="inventoryList" class="inventory-list"></div><hr id="inventoryDescriptionRule" class="inventory-description-rule hidden"><div id="inventoryItemDescription" class="inventory-item-description hidden"></div><div id="inventoryItemPanel" class="inventory-item-panel hidden"><strong id="inventorySelectedName"></strong><div class="inventory-item-buttons"><button id="inventoryUseBtn" class="secondary-btn" aria-label="Usar item" title="Usar item">usar</button><button id="inventoryDiscardBtn" class="danger-btn" aria-label="Descartar item" title="Descartar item">🗑️</button></div></div><div class="inventory-actions"><button id="powerPotionBtn" class="special-top-btn hidden">✨ poder</button><button id="curePotionBtn" class="special-top-btn hidden">🧪 cura</button></div></div></aside><div id="inventoryScrollHint" class="inventory-scroll-hint hidden" aria-hidden="true">👇</div>
+<dialog id="journalDialog" class="journal-dialog"><div class="dialog-inner"><div class="dialog-head"><h2>📜 Registro da jornada</h2><button class="icon-btn" type="button" data-close="journalDialog" aria-label="Fechar Registro da jornada" title="Fechar">✕</button></div><div id="journalList" class="journal-list" aria-live="polite"></div><div class="dialog-actions"><button class="primary-btn" type="button" data-close="journalDialog">Fechar</button></div></div></dialog>
+<dialog id="faerieMarketDialog" class="faerie-market-dialog"><div class="faerie-market-inner"><button id="faerieMarketClose" class="icon-btn faerie-market-close" type="button" aria-label="Fechar Mercado Faérico" title="Fechar">✕</button><div id="faerieMarketFairy" class="faerie-fairy" aria-hidden="true">🧚‍♀️</div><h2 class="faerie-market-title">Mercado Faérico</h2><p id="faerieMarketCopy" class="faerie-market-copy">Fadas e duendes estão sempre prontos para negociar.</p><div id="faerieMarketOffers" class="faerie-offers"></div><div id="faerieMarketDebtSummary" class="faerie-debt-summary hidden"></div><div class="faerie-market-actions"><button id="faerieLoanBtn" class="secondary-btn faerie-market-mode-btn" type="button">Pedir Empréstimo</button><button id="faerieStealBtn" class="secondary-btn faerie-market-mode-btn" type="button">Tentar Roubar</button></div></div></dialog>
+<dialog id="sectionCommerceDialog" class="section-commerce-dialog"><div class="dialog-inner"><div class="dialog-head"><h2>Comércio</h2><button class="icon-btn" data-close="sectionCommerceDialog">✕</button></div><div id="sectionCommerceList" class="section-commerce-list"></div><div class="dialog-actions"><button id="sectionCommerceStealBtn" class="secondary-btn hidden" type="button">Tentar roubar</button><button class="secondary-btn" data-close="sectionCommerceDialog">Voltar</button></div></div></dialog>
+<div id="settingsPopover" class="settings-popover hidden" role="dialog" aria-modal="false" aria-label="Configurações">
+  <div class="settings-popover-head"><strong>Configurações</strong><button id="settingsCloseBtn" class="settings-close-btn" type="button" aria-label="Fechar configurações" title="Fechar">×</button></div>
+  <div id="settingsEditorTests" class="settings-editor-tests" aria-label="Testes do sistema 314.2">
+    <div class="settings-editor-tests-title">🧪 Testes 314.2</div>
+    <div class="settings-editor-tests-copy">Prepare a próxima rolagem e então teste a aventura normalmente.</div>
+    <div class="settings-editor-tests-grid">
+      <button class="settings-editor-test-btn" type="button" data-v314-test="hero66">Herói 6+6</button>
+      <button class="settings-editor-test-btn" type="button" data-v314-test="hero11">Herói 1+1</button>
+      <button class="settings-editor-test-btn" type="button" data-v314-test="foe66">Oponente 6+6</button>
+      <button class="settings-editor-test-btn" type="button" data-v314-test="foe11">Oponente 1+1</button>
+      <button class="settings-editor-test-btn" type="button" data-v314-test="both66">Ambos 6+6</button>
+      <button class="settings-editor-test-btn" type="button" data-v314-test="both11">Ambos 1+1</button>
+      <button class="settings-editor-test-btn" type="button" data-v314-test="magic2">Preparar Roll-under 2</button>
+      <button class="settings-editor-test-btn" type="button" data-v314-test="magic12">Preparar Roll-under 12</button>
+      <button class="settings-editor-test-btn" type="button" data-v314-test="clear">Limpar fila</button>
+    </div>
+    <div class="settings-editor-epa-row"><select id="settingsEditorEpaSelect" aria-label="Resultado da Falha Mística"><option value="3">Falha 3 — Sapo</option><option value="4">Falha 4 — Bebê</option><option value="5">Falha 5 — Lixo Podre</option><option value="6">Falha 6 — Cogumelo</option><option value="7">Falha 7 — Erupção</option><option value="8">Falha 8 — Inverno</option><option value="9">Falha 9 — Borboletas</option><option value="10">Falha 10 — Conjuração</option><option value="11">Falha 11 — Cabelo azul</option><option value="12">Falha 12 — Mundo afunda</option><option value="13">Falha 13 — Chifres</option><option value="14">Falha 14 — Lula</option><option value="15">Falha 15 — Clima aleatório</option><option value="16">Falha 16 — Armas em flores</option><option value="17">Falha 17 — Mudança de sexo</option><option value="18">Falha 18 — Necrópole</option></select><button id="settingsEditorEpaBtn" class="settings-editor-test-btn" type="button">Preparar Falha Mística</button></div>
+  </div>
+  <label class="settings-check settings-reading-assist"><input id="settingsReadingAssist" type="checkbox" /><span>Leitura e comandos por voz</span></label>
+  <div class="settings-reading-assist-help">Lê a aventura e as interações, aceita respostas por número ou palavras e mantém o Combate Estratégico com os dados ocultos.</div>
+  <label class="settings-check"><input id="settingsSoundtrackMute" type="checkbox" /><span>Silenciar trilha sonora</span></label>
+  <label class="settings-check"><input id="settingsHideDice" type="checkbox" /><span>Ocultar rolagem de dados</span></label>
+  <div class="settings-combat-group" role="radiogroup" aria-label="Modo de combate">
+    <div class="settings-combat-title">Combate</div>
+    <label class="settings-radio"><input id="settingsCombatStrategic" type="radio" name="settingsCombatMode" value="strategic" /><span>Combate Estratégico</span></label>
+    <label class="settings-radio"><input id="settingsCombatAction" type="radio" name="settingsCombatMode" value="action" checked /><span>Combate de Ação</span></label>
+    <label class="settings-radio"><input id="settingsCombatQuick" type="radio" name="settingsCombatMode" value="quick" /><span>Combate Rápido</span></label>
+    <div class="settings-combat-help">Ação usa todas as regras do Estratégico e acrescenta a janela temporal de ataque. Rápido resolve o encontro automaticamente.</div>
+  </div>
+  <button id="settingsRestartBtn" class="settings-restart-btn" type="button"><span aria-hidden="true">↻</span><span>Reiniciar partida</span></button>
+  <button id="settingsHomeBtn" class="settings-home-btn" type="button"><span aria-hidden="true">⌂</span><span>Voltar à página inicial</span></button>
+  <div class="settings-divider" aria-hidden="true"></div>
+  <div class="settings-bookmark-head"><strong>Marcadores</strong><span id="settingsBookmarkCount">0/7</span></div>
+  <div id="bookmarkList" class="bookmark-list"></div>
+</div>
+<dialog id="rawDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Editando arquivo completo</h2><button class="icon-btn" data-close="rawDialog">✕</button></div><textarea id="rawEditor" spellcheck="false"></textarea><div class="dialog-actions"><button class="secondary-btn" data-close="rawDialog">Cancelar</button><button id="rawExportBtn" class="secondary-btn">Exportar</button><button id="rawApplyBtn" class="primary-btn">Salvar</button></div></div></dialog>
+<dialog id="validationDialog" class="validation-dialog"><div class="dialog-inner"><div class="dialog-head"><h2>Validação da Aventura</h2><button class="icon-btn" data-close="validationDialog">✕</button></div><div id="validationSummary" class="validation-summary"></div><div class="validation-graph-wrap"><svg id="validationGraph" class="validation-graph" role="img" aria-label="Grafo das seções da aventura"></svg></div><div id="validationProblems" class="validation-problems"></div><div id="validationSectionPreview" class="validation-section-preview hidden" role="dialog" aria-live="polite"><div id="validationPreviewTitle" class="validation-preview-title"></div><div id="validationPreviewText" class="validation-preview-text"></div><div class="validation-preview-actions"><button id="validationPreviewEditBtn" class="primary-btn" type="button">Editar</button></div></div></div></dialog>
+<dialog id="linkDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Vincular a uma seção existente</h2><button class="icon-btn" data-close="linkDialog">✕</button></div><input id="sectionSearch" type="search" placeholder="Buscar pelo início do texto…" /><div id="sectionList" class="dialog-list"></div></div></dialog>
+<dialog id="previousImagesDialog" class="media-history-dialog"><div class="dialog-inner"><div class="dialog-head"><h2>Imagens anteriores</h2><button class="icon-btn" data-close="previousImagesDialog">✕</button></div><div id="previousImageGallery" class="previous-image-gallery" aria-label="Imagens anteriores"></div></div></dialog>
+<dialog id="previousTracksDialog" class="media-history-dialog"><div class="dialog-inner"><div class="dialog-head"><h2>Trilhas anteriores</h2><button class="icon-btn" data-close="previousTracksDialog">✕</button></div><div id="previousTrackList" class="previous-track-list"></div></div></dialog>
+<dialog id="testDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Criar teste</h2><button class="icon-btn" type="button" data-close="testDialog">✕</button></div><label class="field-label" for="testType">Tipo de teste</label><select id="testType" class="class-select"><option>APTIDÃO</option><option>SANIDADE</option><option>FORTUNA</option><option value="PERICIA">PERÍCIA</option></select><div id="testKnowledgeWrap" class="hidden"><label class="field-label" for="testKnowledgeInput">Perícia</label><input id="testKnowledgeInput" type="text" list="testKnowledgeOptions" autocomplete="off" placeholder="Escolha ou invente uma Perícia" /><datalist id="testKnowledgeOptions"><option value="Cultura Geral"></option><option value="Botânica"></option><option value="História"></option><option value="Gramática"></option><option value="Matemática"></option><option value="Medicina"></option><option value="Idiomas"></option><option value="Espada"></option><option value="Arco e Flecha"></option><option value="Roubar"></option><option value="Esgueirar"></option><option value="Luta Armada"></option><option value="Meditação"></option><option value="Treino Mágico"></option><option value="Controle Arcano"></option><option value="Artes Ladinas"></option><option value="Malabarismo"></option><option value="Etiqueta"></option><option value="Retórica"></option><option value="Empatia"></option><option value="Comércio"></option><option value="Jogos de Azar"></option><option value="Intimidação"></option><option value="Mentalismo"></option><option value="Malandragem"></option><option value="Colapso Mental"></option><option value="Amnésia"></option></datalist></div><div class="test-difficulty" role="radiogroup" aria-label="Dificuldade do teste"><label><input type="radio" name="testDifficulty" value="normal" checked>Normal</label><label><input type="radio" name="testDifficulty" value="easy">Fácil</label><label><input type="radio" name="testDifficulty" value="hard">Difícil</label></div><div id="testMagicCostWrap" class="hidden"><label class="field-label" for="testMagicCost">Custo de SANIDADE</label><input id="testMagicCost" type="number" min="1" max="12" step="1" value="2" inputmode="numeric" /></div><div class="status-line">Fácil aplica +2 ao alvo do teste. Difícil aplica -2. Testes de SANIDADE usam custo padrão 2. Testes de Perícia usam SANIDADE + o valor daquela Perícia; sem a Perícia, o herói testa FORTUNA. Serão criadas duas seções editáveis: ✅ Sucesso e ❌ Fracasso.</div><div class="dialog-actions"><button class="secondary-btn" type="button" data-close="testDialog">Cancelar</button><button id="testCreateBtn" class="primary-btn" type="button">Criar Sucesso e Fracasso</button></div></div></dialog>
+<dialog id="answerEditorDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Exigir Resposta</h2><button class="icon-btn" type="button" data-close="answerEditorDialog">✕</button></div><label class="field-label" for="answerQuestionInput">Pergunta</label><input id="answerQuestionInput" type="text" placeholder="Escreva a pergunta" /><label class="field-label" for="answerExpectedInput">Resposta correta</label><input id="answerExpectedInput" type="text" placeholder="Escreva a resposta esperada" /><label class="dialogue-editor-toggle"><input id="answerExactCheck" type="checkbox" /><span>apenas resposta exata</span></label><div class="status-line">Serão criadas duas seções editáveis: ✅ Sucesso e ❌ Fracasso. Quando a resposta exata ficar desligada, o sistema aceita erros de digitação.</div><div class="dialog-actions"><button id="answerRemoveBtn" class="secondary-btn" type="button">Remover exigência</button><button class="secondary-btn" type="button" data-close="answerEditorDialog">Cancelar</button><button id="answerSaveBtn" class="primary-btn" type="button">Salvar resposta</button></div></div></dialog>
+<dialog id="answerPromptDialog"><div class="dialog-inner"><div class="answer-prompt-head"><span class="answer-prompt-icon">❓</span><div>Responder</div></div><div id="answerPromptQuestion" class="answer-prompt-question"></div><input id="answerPromptInput" class="answer-prompt-input" type="text" placeholder="Digite sua resposta" autocomplete="off" /><div class="dialog-actions"><button id="answerPromptCancel" class="secondary-btn">Cancelar</button><button id="answerPromptConfirm" class="primary-btn">Responder</button></div></div></dialog>
+<dialog id="easyDeathDialog" class="easy-death-dialog"><div class="dialog-inner"><div class="dialog-head"><h2>Uma nova chance?</h2></div><div id="easyDeathCountdown" class="easy-death-countdown">10</div><div class="dialog-actions"><button id="easyDeathAcceptBtn" class="secondary-btn" type="button">Aceitar Morte</button><button id="easyDeathContinueBtn" class="primary-btn" type="button">Continuar jogo</button></div></div></dialog>
+<dialog id="lockDialog"><div class="dialog-inner condition-dialog-inner"><div class="dialog-head"><h2>🔓 Condições</h2><button class="icon-btn" data-close="lockDialog">✕</button></div><div id="lockRequirements" class="choice-rule-grid"></div><button id="lockAddRequirementBtn" class="secondary-btn" type="button" style="margin-top:8px">+ Adicionar condição</button><div id="lockModeWrap" class="lock-mode-wrap hidden"><select id="lockModeSelect" aria-label="Combinação das condições"><option value="ALL">Exigir todas as condições</option><option value="ANY">Exigir uma das condições</option></select></div><label class="condition-fail-field">Quando a condição falhar<select id="lockFailMode"><option value="BLOCK">Exibir alternativa bloqueada</option><option value="HIDE">Ocultar alternativa</option></select></label><div class="rule-help">Cada condição pode usar Classe, Item ou Estado. Itens aceitam quantidade, comparação, consumo e ativação. Estados aceitam presença ou ausência. Classe compara com a classe atual do herói.</div><div class="dialog-actions"><button id="removeLockBtn" class="secondary-btn" type="button">Remover condições</button><button class="secondary-btn" type="button" data-close="lockDialog">Cancelar</button><button id="lockSaveBtn" class="primary-btn" type="button">Salvar condições</button></div></div></dialog>
+<dialog id="choiceFxDialog"><div class="dialog-inner"><div class="dialog-head"><h2>💱 Efeitos da alternativa</h2><button class="icon-btn" type="button" data-close="choiceFxDialog">✕</button></div><label class="field-label">Ao executar</label><div id="choiceFxAlwaysRows" class="fx-builder"></div><button id="choiceFxAddBtn" class="secondary-btn fx-add-btn" type="button">+ Adicionar efeito</button><div class="fx-scope-row"><label class="field-label" for="choiceFxScope">Duração<select id="choiceFxScope"><option value="">Permanente</option><option value="SECTION">Até sair da seção</option><option value="NEXT_TEST">Até fim do próximo teste</option><option value="NEXT_COMBAT">Até fim do próximo combate</option><option value="TURNS">N turnos</option><option value="HOURS">N horas</option></select></label><label id="choiceFxDurationWrap" class="field-label hidden" for="choiceFxDuration">Duração<input id="choiceFxDuration" type="number" min="1" step="1" value="1" inputmode="numeric"></label></div><div class="rule-help">O sinal do valor define ganho ou perda. ITEM usa quantidade positiva para adicionar e negativa para remover. ESTADO usa +1 para adicionar e -1 para remover.</div><div class="dialog-actions"><button id="choiceFxClearBtn" class="secondary-btn" type="button">Limpar</button><button class="secondary-btn" type="button" data-close="choiceFxDialog">Cancelar</button><button id="choiceFxSaveBtn" class="primary-btn" type="button">Salvar</button></div></div></dialog>
+<dialog id="outcomeFxDialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="outcomeFxTitle">💱 Efeitos do resultado</h2><button class="icon-btn" type="button" data-close="outcomeFxDialog">✕</button></div><div id="outcomeFxRows" class="fx-builder"></div><button id="outcomeFxAddBtn" class="secondary-btn fx-add-btn" type="button">+ Adicionar efeito</button><div class="fx-scope-row"><label class="field-label" for="outcomeFxScope">Duração<select id="outcomeFxScope"><option value="">Permanente</option><option value="SECTION">Até sair da seção</option><option value="NEXT_TEST">Até fim do próximo teste</option><option value="NEXT_COMBAT">Até fim do próximo combate</option><option value="TURNS">N turnos</option><option value="HOURS">N horas</option></select></label><label id="outcomeFxDurationWrap" class="field-label hidden" for="outcomeFxDuration">Duração<input id="outcomeFxDuration" type="number" min="1" step="1" value="1" inputmode="numeric"></label></div><div class="rule-help">Este 💱 pertence somente a este resultado.</div><div class="dialog-actions"><button id="outcomeFxClearBtn" class="secondary-btn" type="button">Limpar</button><button class="secondary-btn" type="button" data-close="outcomeFxDialog">Cancelar</button><button id="outcomeFxSaveBtn" class="primary-btn" type="button">Salvar</button></div></div></dialog>
+<dialog id="branchDialog"><div class="dialog-inner"><div class="dialog-head"><h2>🎰 Alternativa randômica</h2><button class="icon-btn" type="button" data-close="branchDialog">✕</button></div><div class="branch-source-row"><label>Fonte<select id="branchSource"><option value="1d2">d2</option><option value="1d4">d4</option><option value="1d6">d6</option><option value="1d8">d8</option><option value="1d10">d10</option><option value="1d12">d12</option><option value="1d20">d20</option></select></label><label class="adventure-option" style="margin:0;align-self:end"><input id="branchSilent" type="checkbox"><span>Silencioso</span></label></div><div class="rule-help">Os resultados são criados automaticamente pela fonte escolhida. d2 cria 2 destinos; d12 cria 12. Depois de salvar, cada resultado aparece abaixo da alternativa com 🔗, → e 💱.</div><div class="dialog-actions"><button id="branchRemoveBtn" class="secondary-btn" type="button">Remover ramificação</button><button class="secondary-btn" type="button" data-close="branchDialog">Cancelar</button><button id="branchSaveBtn" class="primary-btn" type="button">Salvar</button></div></div></dialog>
+
+<dialog id="hoursDialog"><div class="dialog-inner"><div class="dialog-head"><h2>🕐 Avançar tempo</h2><button class="icon-btn" type="button" data-close="hoursDialog">✕</button></div><label class="field-label" for="choiceTimeUnit">Unidade</label><select id="choiceTimeUnit" class="class-select"><option value="turns">Turnos</option><option value="minutes">Minutos</option><option value="hours">Horas</option></select><label class="field-label" for="choiceTimeAmount" style="margin-top:10px">Quantidade</label><input id="choiceTimeAmount" type="number" min="1" step="1" inputmode="numeric" value="1" /><div class="status-line">Um turno equivale a 30 minutos. Minutos permitem passagens curtas; horas aceitam incrementos de 0,5. Sem marcação especial, a transição normal continua avançando 0,5 hora.</div><div class="dialog-actions"><button id="hoursRemoveBtn" class="secondary-btn" type="button">Remover avanço especial</button><button class="secondary-btn" type="button" data-close="hoursDialog">Cancelar</button><button id="hoursSaveBtn" class="primary-btn" type="button">Salvar</button></div></div></dialog>
+<dialog id="titleDialog" class="adventure-config-dialog"><div class="dialog-inner"><div class="dialog-head"><h2>Aventura</h2><button class="icon-btn" data-close="titleDialog">✕</button></div>
+<div class="adventure-tabs" role="tablist" aria-label="Configurações da aventura">
+  <button id="adventureDataTabBtn" class="adventure-tab-btn active" type="button" role="tab">Dados da Aventura</button>
+  <button id="adventureMarketTabBtn" class="adventure-tab-btn" type="button" role="tab">Mercado</button>
+  <button id="adventureEngineeringTabBtn" class="adventure-tab-btn" type="button" role="tab">Engenharia</button>
+</div>
+<div id="adventureDataTab" class="adventure-tab-panel">
+  <label class="field-label" for="titleInput">Título</label><input id="titleInput" type="text" />
+  <label class="field-label" for="titleMusicInput" style="margin-top:12px">Trilha sonora</label><input id="titleMusicInput" type="url" placeholder="Deixe vazio para usar as trilhas padrão automáticas" />
+  <label class="field-label" for="titleDescriptionInput" style="margin-top:12px">Apresentação</label><textarea id="titleDescriptionInput" rows="4" placeholder="Texto de apresentação da aventura"></textarea>
+  <label class="field-label" for="titleStartTimeInput" style="margin-top:12px">Hora Inicial</label><input id="titleStartTimeInput" type="time" step="60" value="10:00" />
+  <label class="field-label" for="titleCurrencyInput" style="margin-top:12px">Moeda Corrente</label><input id="titleCurrencyInput" type="text" maxlength="48" value="Moedas de Ouro" placeholder="Moedas de Ouro" />
+  <label class="adventure-option"><input id="faerieMarketCheck" type="checkbox" checked /><span>Habilitar Mercado Faérico</span></label>
+  <div class="dialog-actions"><button id="titleSaveBtn" class="primary-btn">Salvar</button></div>
+</div>
+<div id="adventureMarketTab" class="adventure-tab-panel hidden">
+  <div class="adventure-market-toolbar"><input id="adventureMarketSearch" type="search" autocomplete="off" placeholder="Buscar item…" aria-label="Buscar item no Mercado" /></div>
+  <div id="adventureMarketList" class="adventure-catalog-list"></div>
+</div>
+<div id="adventureEngineeringTab" class="adventure-tab-panel hidden">
+  <div class="engineering-toolbar"><input id="engineeringSearch" type="search" autocomplete="off" placeholder="Buscar receita…" aria-label="Buscar receita" /><button id="engineeringCreateBtn" class="primary-btn" type="button">Criar receita</button></div>
+  <div id="engineeringCreateForm" class="engineering-create-form hidden">
+    <div class="engineering-ingredients-row">
+      <select id="engineeringIngredientA" aria-label="Primeiro ingrediente"><option value="" disabled selected>Escolha o primeiro ingrediente</option></select>
+      <div class="engineering-recipe-arrow">+</div>
+      <select id="engineeringIngredientB" aria-label="Segundo ingrediente"><option value="" disabled selected>Escolha o segundo ingrediente</option></select>
+    </div>
+    <div class="engineering-recipe-arrow">↓ produz</div>
+    <select id="engineeringResult" aria-label="Resultado produzido"><option value="" disabled selected>Escolha o resultado</option></select>
+    <div class="engineering-time-row">
+      <label for="engineeringHours">Gasto de tempo necessário</label>
+      <input id="engineeringHours" type="number" min="0.5" step="0.5" value="1" inputmode="decimal" aria-label="Gasto de tempo necessário em horas" />
+      <span>horas</span>
+    </div>
+    <div class="dialog-actions"><button id="engineeringCancelCreateBtn" class="secondary-btn" type="button">Cancelar</button><button id="engineeringSaveRecipeBtn" class="primary-btn" type="button">Criar receita</button></div>
+  </div>
+  <div id="engineeringList" class="engineering-list"></div>
+</div>
+</div></dialog>
+<dialog id="musicDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Trilha sonora</h2><button class="icon-btn" data-close="musicDialog">✕</button></div><label class="field-label" for="musicUrlInput">Link da trilha</label><input id="musicUrlInput" type="url" placeholder="YouTube ou áudio direto (.mp3, .ogg, .wav…)" /><div class="dialog-actions"><button class="secondary-btn" data-close="musicDialog">Cancelar</button><button id="musicSaveBtn" class="primary-btn">Salvar trilha</button></div></div></dialog>
+<dialog id="confirmDialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="confirmTitle">Confirmar</h2><button class="icon-btn" data-close="confirmDialog">✕</button></div><div id="confirmText" style="line-height:1.55;color:var(--muted)"></div><div class="dialog-actions"><button class="secondary-btn" data-close="confirmDialog">Cancelar</button><button id="confirmBtn" class="primary-btn">Usar recurso</button></div></div></dialog>
+<dialog id="updateSaveDialog"><div class="dialog-inner update-save-inner"><div class="dialog-head"><h2>Encerrar jogo?</h2></div><div class="update-save-copy">Selecione uma das opções abaixo.</div><div class="dialog-actions update-save-actions"><button id="updateSaveExitBtn" class="danger-btn" type="button">Sair</button><button id="updateSaveBackBtn" class="primary-btn" type="button">Voltar</button></div></div></dialog>
+<dialog id="markerDialog"><div class="dialog-inner"><div class="dialog-head"><div class="marker-dialog-title-row"><h2 id="markerDialogTitle">Inserir marcação</h2><button id="markerCreateBtn" class="marker-create-btn hidden" type="button" title="Criar Item ou Estado" aria-label="Criar Item ou Estado">Criar novo</button></div><button class="icon-btn" data-close="markerDialog">✕</button></div><div class="marker-search-wrap"><input id="markerSearch" class="marker-search" type="search" autocomplete="off" placeholder="Buscar itens…" aria-label="Buscar itens" /></div><div id="markerDialogList" class="dialog-list"></div></div></dialog>
+<dialog id="editorCreateDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Criar</h2><button class="icon-btn" data-close="editorCreateDialog">✕</button></div><div class="editor-create-choice"><button id="createItemChoiceBtn" type="button"><span class="create-icon">📦</span>Criar Item</button><button id="createStateChoiceBtn" type="button"><span class="create-icon">◉</span>Criar Estado</button></div></div></dialog>
+<dialog id="editorItemDialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="editorItemDialogTitle">Novo Item</h2><button class="icon-btn" data-close="editorItemDialog">✕</button></div><div class="editor-create-form">
+  <input id="editorItemName" type="text" maxlength="80" placeholder="Nome" aria-label="Nome" />
+  <div class="editor-compact-row">
+    <select id="editorItemCategory" class="editor-grow" aria-label="Categoria"><option value="__choose__" disabled selected>Escolha uma categoria</option><option value="__item__">Item</option><option value="Materiais">Materiais</option><option value="Poções">Poções</option><option value="Prazer">Prazer</option><option value="Armas">Armas</option><option value="Defesas">Defesas</option><option value="Livro">Livro</option><option value="Documento">Documento</option><option value="Feitiço">Feitiço</option></select>
+    <span class="editor-number-wrap"><span>Preço</span><button class="editor-number-step" type="button" data-step-target="editorItemPrice" data-step-delta="-1">−</button><input id="editorItemPrice" type="number" min="1" max="999" step="1" inputmode="numeric" value="10" aria-label="Preço sugerido" /><button class="editor-number-step" type="button" data-step-target="editorItemPrice" data-step-delta="1">+</button></span>
+    <label class="editor-create-check"><input id="editorItemConsumable" type="checkbox" /><span>Consumível</span></label>
+  </div>
+  <div class="editor-effect-head"><span>Efeitos</span></div>
+  <div id="editorItemEffects" class="editor-effect-list"></div>
+  <button id="editorItemAddEffectBtn" class="editor-effect-add" type="button">+ adicionar efeito</button>
+  <div id="editorItemPreview" class="editor-create-preview"></div>
+</div><div class="dialog-actions"><button class="secondary-btn" data-close="editorItemDialog">Cancelar</button><button id="editorItemSaveInsertBtn" class="create-insert-btn" type="button">Criar e Inserir</button><button id="editorItemSaveBtn" class="primary-btn" type="button">Criar</button></div></div></dialog>
+<dialog id="editorStateDialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="editorStateDialogTitle">Novo Estado</h2><button class="icon-btn" data-close="editorStateDialog">✕</button></div><div class="editor-create-form">
+  <input id="editorStateName" type="text" maxlength="80" placeholder="Nome" aria-label="Nome" />
+  <div class="editor-compact-row">
+    <select id="editorStateVisibility" class="editor-grow" aria-label="Visibilidade"><option value="" disabled selected>Escolha a visibilidade</option><option value="visible">Visível</option><option value="hidden">Oculto</option></select>
+    <select id="editorStateDurationMode" class="editor-grow" aria-label="Duração"><option value="" disabled selected>Escolha a duração</option><option value="permanent">Permanente</option><option value="turns">Em turnos</option></select>
+    <span id="editorStateDurationFields" class="editor-state-life hidden"><span class="editor-number-wrap"><span>Turnos</span><button class="editor-number-step" type="button" data-step-target="editorStateDurationTurns" data-step-delta="-1">−</button><input id="editorStateDurationTurns" type="number" min="1" max="999" step="1" inputmode="numeric" value="4" aria-label="Turnos de duração" /><button class="editor-number-step" type="button" data-step-target="editorStateDurationTurns" data-step-delta="1">+</button></span></span>
+  </div>
+  <div class="editor-effect-head"><span>Efeitos</span></div>
+  <div id="editorStateEffects" class="editor-effect-list"></div>
+  <button id="editorStateAddEffectBtn" class="editor-effect-add" type="button">+ adicionar efeito</button>
+  <div id="editorStatePreview" class="editor-create-preview"></div>
+</div><div class="dialog-actions"><button class="secondary-btn" data-close="editorStateDialog">Cancelar</button><button id="editorStateSaveInsertBtn" class="create-insert-btn" type="button">Criar e Inserir</button><button id="editorStateSaveBtn" class="primary-btn" type="button">Criar</button></div></div></dialog>
+<dialog id="opportunityDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Janela de oportunidade</h2><button class="icon-btn" data-close="opportunityDialog">✕</button></div><p class="opportunity-copy">Você abriu espaço entre você e o inimigo. Escolha rápido.</p><div class="opportunity-actions"><button id="opportunityFleeBtn" class="secondary-btn">Fugir</button><button id="opportunityGearBtn" class="secondary-btn">Reequipar</button><button id="opportunityFocusBtn" class="primary-btn">Concentrar</button></div></div></dialog>
+<dialog id="noticeDialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="noticeTitle">Aviso</h2><button class="icon-btn" data-close="noticeDialog">✕</button></div><div id="noticeText" style="line-height:1.55;color:var(--muted);white-space:pre-line"></div><div class="dialog-actions"><button id="noticeOkBtn" class="primary-btn">Entendi</button></div></div></dialog>
+<dialog id="sleepDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Seu corpo pede descanso...</h2></div><p class="sleep-copy">O cansaço se aproxima. Dormir faz 6 horas passarem, recupera 2 de VIDA e SANIDADE conforme sua Meditação, além de evitar ou remover a penalidade de sono.</p><div class="sleep-actions"><button id="sleepLaterBtn" class="secondary-btn">Não posso agora</button><button id="sleepNowBtn" class="primary-btn">😴 Encontrar um lugar para dormir</button></div></div></dialog>
+<dialog id="premonitionDialog"><div class="dialog-inner"><div class="dialog-head"><h2>Premonição</h2></div><p class="sleep-copy">Escolha qual possibilidade deseja observar. A visão revela somente o texto da seção, sem aplicar qualquer efeito da aventura.</p><div id="premonitionChoiceList" class="dialog-list"></div><div class="dialog-actions"><button id="premonitionCancelBtn" class="secondary-btn">Cancelar</button></div></div></dialog>
+<dialog id="hungerDialog"><div class="dialog-inner"><div class="dialog-head"><h2>A fome está batendo</h2></div><p class="sleep-copy">Seu corpo cobra alimento. Você perde 1 de VIDA e precisa encontrar algo para comer.</p><div class="sleep-actions"><button id="hungerOkBtn" class="primary-btn">Entendi</button></div></div></dialog>
+<dialog id="carryDialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="carryTitle">Carga Cheia</h2><button class="icon-btn" data-close="carryDialog">✕</button></div><p id="carryText" class="carry-copy"></p><div class="carry-actions"><button id="carryEatBtn" class="secondary-btn">comer provisão</button><button id="carryDiscardBtn" class="secondary-btn">descartar algo</button><button id="carryAbandonBtn" class="danger-btn">abandonar item</button></div><div id="carryDiscardList" class="carry-discard-list hidden"></div></div></dialog>
+
+
+
+<dialog id="npcConfigDialog"><div class="dialog-inner"><div class="dialog-head"><h2>👤 Configurar NPC</h2><button class="icon-btn" type="button" data-close="npcConfigDialog">✕</button></div>
+  <div class="npc-editor-toolbar"><label>Modelo pré-definido<select id="npcTemplateSelect"></select></label><button id="npcApplyTemplateBtn" class="secondary-btn" type="button">Aplicar modelo</button></div>
+  <div class="npc-editor-grid">
+    <label class="wide">Nome<input id="npcNameInput" type="text" maxlength="80"></label>
+    <label class="full">Descrição física<textarea id="npcPhysicalDescriptionInput" class="npc-physical-description" rows="3" maxlength="900" placeholder="Aparência canônica do NPC: idade aparente, rosto, cabelos, roupas, marcas, postura visível…"></textarea></label>
+    <div class="wide npc-portrait-editor-row"><div class="npc-portrait-editor-tools"><label>Retrato<input id="npcPortraitInput" type="url" placeholder="https://…"></label><label><input id="npcAiIllustrationCheck" type="checkbox"> Ilustração por IA</label></div><img id="npcPortraitPreview" class="npc-portrait-preview hidden" alt="Prévia do retrato do NPC"></div>
+    <label>APTIDÃO <small>defende Intimidar</small><input id="npcSkillInput" type="number" min="0" max="30" step="1"></label><label>VIDA<input id="npcStaminaInput" type="number" min="1" max="99" step="1"></label><label>SANIDADE <small>defende pressões mentais</small><input id="npcSanityInput" type="number" min="0" max="30" step="1"></label><label>FORTUNA <small>defende Negociar e Apostar</small><input id="npcLuckInput" type="number" min="0" max="30" step="1"></label><label>RESISTÊNCIA inicial<input id="npcResistanceInput" type="number" min="0" max="99" step="1"></label><label>RESISTÊNCIA máxima<input id="npcMaxResistanceInput" type="number" min="1" max="99" step="1"></label>
+    <label>Alinhamento<select id="npcAlignmentSelect"><option value="BOM">Bom</option><option value="NEUTRO">Neutro</option><option value="MAU">Mau</option></select></label><label>Reação<select id="npcReactionSelect"><option value="AMISTOSA">Amistosa</option><option value="NEUTRA">Neutra</option><option value="INAMISTOSA">Inamistosa</option></select></label><label>Inteligência<select id="npcIntelligenceSelect"><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option></select></label><label style="align-self:end"><span>Encontro social</span><span><input id="npcSocialEnabledCheck" type="checkbox" checked> ativo</span></label><label class="wide" style="align-self:end"><span>Small Talk contextual</span><span><input id="npcCasualTalkCheck" type="checkbox" checked> três etapas de leitura social</span></label>
+  </div>
+  <div class="npc-editor-heading">ABORDAGENS</div><div id="npcApproachEditor" class="npc-approach-editor"></div>
+  <div class="npc-editor-heading">DIÁLOGOS</div><div id="npcDialogueEditor" class="npc-dialogue-editor"></div><button id="npcAddDialogueBtn" class="secondary-btn" type="button" style="margin-top:8px">+ Adicionar pergunta</button>
+  <div class="npc-editor-heading">TESOURO E FECHAMENTO</div><div class="npc-editor-grid"><label>Valor do Tesouro<input id="npcTreasureValueInput" type="number" min="0" max="999999" step="1"></label><label class="wide">Tesouro / FX<input id="npcTreasureInput" type="text" placeholder="Ex.: +10 Ouro; ESTADO:Conhece a Senha"></label><label class="full">Possui — visível ao jogador<input id="npcOfferHintInput" type="text" maxlength="180" placeholder="Ex.: Rumores sobre a região, acesso ao castelo, um item raro…"></label><label class="full npc-essential-toggle"><span>Essencial para a história</span><span><input id="npcEssentialCheck" type="checkbox"> bloquear o avanço até a resolução</span></label><label><span id="npcClosureLabel">Fechamento</span><select id="npcClosureSelect"></select></label><div id="npcClosureTargetRow" class="full npc-closure-target hidden"><label>Destino obrigatório<input id="npcClosureTargetInput" type="text" readonly placeholder="Nenhuma seção vinculada"></label><div class="npc-closure-target-tools"><button id="npcClosureLinkBtn" class="secondary-btn" type="button" title="Vincular a uma seção existente" aria-label="Vincular a uma seção existente">🔗</button><button id="npcClosureCreateBtn" class="secondary-btn" type="button" title="Criar, vincular e editar uma nova seção" aria-label="Criar, vincular e editar uma nova seção">→</button></div></div><label id="npcClosureTextWrap" class="full">Texto/nota de Fechamento<textarea id="npcClosureTextInput" rows="2" placeholder="Opcional; ajuda a contextualizar a reação final."></textarea></label></div>
+  <div class="dialog-actions"><button id="npcRemoveBtn" class="secondary-btn" type="button">Apagar NPC</button><button class="secondary-btn" type="button" data-close="npcConfigDialog">Cancelar</button><button id="npcSaveBtn" class="primary-btn" type="button">Salvar NPC</button></div>
+</div></dialog>
+<dialog id="npcRoundDialog" class="npc-round-dialog"><div class="dialog-inner"><button id="npcRoundLoreBtn" type="button" class="combat-lore-btn npc-round-lore-btn" data-role="npc-lore-btn" title="Sobre esse Encontro" aria-label="Sobre esse Encontro">📜</button><div class="npc-round-hero"><img id="npcRoundAvatar" class="npc-round-avatar" alt="Retrato do NPC"><div id="npcRoundName" class="npc-round-name"></div><div id="npcRoundAction" class="npc-round-action"></div></div><div class="npc-round-body"><div id="npcRoundNarration" class="npc-round-narration"></div><div id="npcRoundSpeech" class="npc-round-speech hidden"></div><div class="dialog-actions"><button id="npcRoundContinueBtn" class="primary-btn" type="button">Continuar</button></div></div></div></dialog>
+<dialog id="npcConversationDialog" class="npc-choice-dialog"><div class="dialog-inner"><div class="dialog-head"><h2>Conversar</h2><button class="icon-btn" type="button" data-close="npcConversationDialog">✕</button></div><div id="npcConversationList" class="npc-choice-list"></div></div></dialog>
+<dialog id="npcNegotiationDialog" class="npc-choice-dialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="npcNegotiationTitle">Negociar</h2><button class="icon-btn" type="button" data-close="npcNegotiationDialog">✕</button></div><div id="npcNegotiationAsk" class="npc-stake-summary"></div><label>Moeda oferecida<input id="npcNegotiationGold" type="number" min="0" step="1" value="0"></label><div id="npcNegotiationItems" class="npc-stake-list"></div><div id="npcNegotiationValue" class="npc-stake-summary"></div><div class="dialog-actions"><button id="npcAcceptCounterBtn" class="secondary-btn" type="button">Aceitar contraproposta</button><button class="secondary-btn" type="button" data-close="npcNegotiationDialog">Voltar</button><button id="npcSubmitOfferBtn" class="primary-btn" type="button">Fazer proposta</button></div></div></dialog>
+<dialog id="npcWagerDialog" class="npc-choice-dialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="npcWagerTitle">Apostar</h2><button class="icon-btn" type="button" data-close="npcWagerDialog">✕</button></div><div id="npcWagerMinimum" class="npc-stake-summary"></div><label>Moeda apostada<input id="npcWagerGold" type="number" min="0" step="1" value="0"></label><div id="npcWagerItems" class="npc-stake-list"></div><div id="npcWagerValue" class="npc-stake-summary"></div><div class="dialog-actions"><button class="secondary-btn" type="button" data-close="npcWagerDialog">Voltar</button><button id="npcSubmitWagerBtn" class="primary-btn" type="button">Disputar aposta</button></div></div></dialog>
+<dialog id="combatConfigDialog"><div class="dialog-inner"><div class="dialog-head"><h2>⚔️ Configurar Combate</h2><button class="icon-btn" type="button" data-close="combatConfigDialog">✕</button></div>
+  <div id="combatOpponentPickerWrap" class="combat-opponent-picker-wrap"><select id="combatOpponentPicker" class="combat-opponent-picker" aria-label="Selecionar oponente"></select></div><div id="combatOpponentsEditor" class="combat-opponents-editor"></div>
+  <div class="combat-editor-section-head"><button id="combatAddEventBtn" class="secondary-btn" type="button">+ Adicionar evento</button></div><div id="combatEventsEditor" class="combat-events-editor"></div>
+  <div class="combat-config-footer"><div class="combat-config-summary"><strong>Perigo do Encontro:</strong><span id="combatEncounterDanger"></span></div>
+  <div class="dialog-actions"><button id="combatRemoveBtn" class="secondary-btn" type="button">Apagar tudo</button><button class="secondary-btn" type="button" data-close="combatConfigDialog">Cancelar</button><button id="combatSaveBtn" class="primary-btn" type="button">Salvar</button></div></div>
+</div></dialog>
+<dialog id="combatEventFxDialog"><div class="dialog-inner"><div class="dialog-head"><h2>💱 Efeitos do evento</h2><button class="icon-btn" type="button" data-close="combatEventFxDialog">✕</button></div><div id="combatEventFxRows" class="fx-builder"></div><button id="combatEventFxAddBtn" class="secondary-btn fx-add-btn" type="button">+ Adicionar efeito</button><div class="rule-help">Os efeitos são aplicados ao alvo escolhido no card do evento. O sinal do valor define ganho ou perda; ITEM e ESTADO usam a mesma sintaxe visual das alternativas.</div><div class="dialog-actions"><button id="combatEventFxClearBtn" class="secondary-btn" type="button">Limpar</button><button class="secondary-btn" type="button" data-close="combatEventFxDialog">Cancelar</button><button id="combatEventFxSaveBtn" class="primary-btn" type="button">Salvar</button></div></div></dialog>
+<dialog id="combatLogDialog"><div class="dialog-inner"><div class="dialog-head"><h2 id="combatLogTitle">📜 Sobre esse Encontro</h2><button class="icon-btn" type="button" data-close="combatLogDialog">✕</button></div><div id="combatLogContent"></div><div class="dialog-actions"><button class="primary-btn" type="button" data-close="combatLogDialog">Fechar</button></div></div></dialog>
+<dialog id="periciaGuideDialog"><div class="dialog-inner"><div class="dialog-head"><h2>🧠 Suas Perícias</h2><button class="icon-btn" type="button" data-close="periciaGuideDialog">✕</button></div><p class="pericia-guide-intro">Perícias representam técnicas, conhecimentos e treinamentos adquiridos.</p><div id="periciaGuideBoost" class="pericia-guide-boost hidden"></div><div id="periciaGuideList" class="pericia-guide-list"></div><div class="dialog-actions"><button class="primary-btn" type="button" data-close="periciaGuideDialog">Fechar</button></div></div></dialog>
+
+<script src="assets/js/app.js" defer></script>
+</body>
+</html>
