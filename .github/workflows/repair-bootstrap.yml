@@ -1,0 +1,43 @@
+name: Repair Samsara book runtime
+
+on:
+  push:
+    branches: [repair-book-runtime]
+    paths:
+      - bootstrap/READY
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair-book-runtime
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Reconstruct, validate and commit repaired runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat bootstrap/chunk-*.txt | base64 -d > /tmp/samsara-repair.tar.xz
+          echo '4d7803b06ddbe0bfe49b5828852ee8dedc9b40c212133fb6338d99c910304139  /tmp/samsara-repair.tar.xz' | sha256sum -c -
+          xz -t /tmp/samsara-repair.tar.xz
+          tar -xJf /tmp/samsara-repair.tar.xz -C .
+          npm run check
+          rm -rf bootstrap
+          rm -f .github/workflows/repair-bootstrap.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/css/styles.css scripts/build.mjs \
+            src/js/01-core-runtime.part.js \
+            src/js/03-systems-media-inventory.part.js \
+            src/js/04-adventure-runtime-render.part.js \
+            src/js/05-combat-engine.part.js \
+            src/js/07-reading-voice-bootstrap.part.js
+          git add -A bootstrap .github/workflows/repair-bootstrap.yml
+          git commit -m "fix: restore Book runtime and gate Reading mode"
+          git push origin HEAD:repair-book-runtime
