@@ -19,15 +19,42 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Reconstruct, validate and commit repaired runtime
+      - name: Restore, patch and validate runtime
         shell: bash
         run: |
           set -euo pipefail
-          cat bootstrap/chunk-*.txt | base64 -d > /tmp/samsara-repair.tar.xz
-          echo '4d7803b06ddbe0bfe49b5828852ee8dedc9b40c212133fb6338d99c910304139  /tmp/samsara-repair.tar.xz' | sha256sum -c -
-          xz -t /tmp/samsara-repair.tar.xz
-          tar -xJf /tmp/samsara-repair.tar.xz -C .
+
+          base64 -d bootstrap/css.b64 > /tmp/styles.css.xz
+          echo 'ad0d30d56173c7653ec053e1a7e3eb4bd872c1a18408a9f833cc700e26541925  /tmp/styles.css.xz' | sha256sum -c -
+          xz -t /tmp/styles.css.xz
+          xz -dc /tmp/styles.css.xz > assets/css/styles.css
+
+          base64 -d bootstrap/runtime.patch.b64 > /tmp/runtime.patch.xz
+          echo 'a699358037595d8087e8c61757c9096429dae9ea5454147c768373b76916e993  /tmp/runtime.patch.xz' | sha256sum -c -
+          xz -t /tmp/runtime.patch.xz
+          xz -dc /tmp/runtime.patch.xz > /tmp/runtime.patch
+          git apply --whitespace=nowarn /tmp/runtime.patch
+
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/build.mjs')
+          s=p.read_text()
+          s=s.replace('`href="assets/css/styles.css?v=${buildVersion}`', '`href="assets/css/styles.css?v=${buildVersion}"`')
+          s=s.replace('`src="assets/js/app.js?v=${buildVersion}`', '`src="assets/js/app.js?v=${buildVersion}"`')
+          p.write_text(s)
+          assert '`href="assets/css/styles.css?v=${buildVersion}"`' in s
+          assert '`src="assets/js/app.js?v=${buildVersion}"`' in s
+          PY
+
+          test $(wc -c < assets/css/styles.css) -gt 280000
+          grep -Fq 'body:not(.editor) .editor-panel{display:none}' assets/css/styles.css
+          grep -Fq 'readingAssistReady:false' src/js/01-core-runtime.part.js
+          ! grep -R -Fq 'ensureAudioMicrophonePermission' src/js
+
           npm run check
+          grep -Eq 'href="assets/css/styles.css\?v=[^"]+"' dist/index.html
+          grep -Eq 'src="assets/js/app.js\?v=[^"]+" defer' dist/index.html
+
           rm -rf bootstrap
           rm -f .github/workflows/repair-bootstrap.yml
           git config user.name "github-actions[bot]"
