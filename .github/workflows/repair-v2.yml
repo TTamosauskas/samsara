@@ -1,0 +1,55 @@
+name: Repair Samsara Book runtime v2
+
+on:
+  push:
+    branches: [repair-book-runtime-v2]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: ${{ hashFiles('repair-v2/READY') != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: repair-book-runtime-v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore and validate Book runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cat repair-v2/css-*.b64 | base64 -d > /tmp/book-css.xz
+          echo '7dc25d7881ed01b5d342589abaf66d6210d3a08e4d2825e4845c2d3d481b5a85  /tmp/book-css.xz' | sha256sum -c -
+          xz -t /tmp/book-css.xz
+          xz -dc /tmp/book-css.xz > assets/css/styles.css
+
+          cat repair-v2/patch-*.b64 | base64 -d > /tmp/book-repair.patch.xz
+          echo 'ae1134c25a3ade08588a3c6c69a7627e9c14e7f7b0a3086004e998f38ab88615  /tmp/book-repair.patch.xz' | sha256sum -c -
+          xz -t /tmp/book-repair.patch.xz
+          xz -dc /tmp/book-repair.patch.xz > /tmp/book-repair.patch
+          git apply --check /tmp/book-repair.patch
+          git apply --whitespace=nowarn /tmp/book-repair.patch
+
+          test "$(wc -c < assets/css/styles.css)" -gt 290000
+          grep -Fq 'body:not(.editor) .editor-panel{display:none}' assets/css/styles.css
+          grep -R -Fq 'function syncBookEditorSurfaces' src/js
+          grep -Fq "img.removeAttribute('src')" src/js/04-adventure-runtime-render.part.js
+          grep -R -Fq 'readingAssistReady:false' src/js
+          ! grep -R -Fq 'ensureAudioMicrophonePermission' src/js
+
+          npm run check
+          grep -Eq 'href="assets/css/styles.css\?v=[^"]+"' dist/index.html
+          grep -Eq 'src="assets/js/app.js\?v=[^"]+" defer' dist/index.html
+
+          rm -rf repair-v2
+          rm -f .github/workflows/repair-v2.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: restore Book mode separation and controls'
+          git push origin HEAD:repair-book-runtime-v2
