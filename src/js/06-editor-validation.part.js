@@ -1,6 +1,6 @@
 /* Samsara source fragment: 06-editor-validation.part.js
- * Original monolith lines 4230-4800.
- * This file is concatenated inside the shared async runtime by scripts/build.mjs.
+ * Unified runtime lines 4230-4800.
+ * Concatenated inside the shared async runtime by scripts/build.mjs.
  */
     return [
       ['Básicos',[...customStates,...customStateRemovals,...MARKER_MENUS.basics]],

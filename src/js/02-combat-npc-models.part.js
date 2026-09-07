@@ -1,6 +1,6 @@
 /* Samsara source fragment: 02-combat-npc-models.part.js
- * Original monolith lines 674-1359.
- * This file is concatenated inside the shared async runtime by scripts/build.mjs.
+ * Unified runtime lines 674-1359.
+ * Concatenated inside the shared async runtime by scripts/build.mjs.
  */
   const COMBAT_SPECIALTY_META={
     EMBOSCADA:{label:'Emboscada',weight:.40,desc:'Toma a iniciativa antes do primeiro round.'},
