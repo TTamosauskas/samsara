@@ -9,7 +9,6 @@ permissions:
 
 jobs:
   repair:
-    if: ${{ hashFiles('repair-v2/READY') != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,6 +21,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          test -f repair-v2/READY || { echo 'Repair package is not ready yet.'; exit 0; }
 
           cat repair-v2/css-*.b64 | base64 -d > /tmp/book-css.xz
           echo '7dc25d7881ed01b5d342589abaf66d6210d3a08e4d2825e4845c2d3d481b5a85  /tmp/book-css.xz' | sha256sum -c -
