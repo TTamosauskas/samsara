@@ -1,0 +1,37 @@
+name: Fix voice first attempt
+
+on:
+  push:
+    branches: [fix-voice-first-attempt]
+    paths:
+      - scripts/patch-voice-first-attempt.py
+      - .github/workflows/fix-voice-first-attempt.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-voice-first-attempt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python scripts/patch-voice-first-attempt.py
+      - name: Validate source and build
+        run: |
+          npm run check
+          grep -q "button._samsaraActionStarted=false" src/js/07-reading-voice-bootstrap.part.js
+          grep -q "for(;;)" src/js/07-reading-voice-bootstrap.part.js
+          ! grep -q "Não foi possível concluir essa escolha por voz" src/js/07-reading-voice-bootstrap.part.js
+      - name: Commit validated fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/js/04-adventure-runtime-render.part.js src/js/07-reading-voice-bootstrap.part.js
+          git commit -m "fix: make spoken choice first attempt authoritative"
+          git push
