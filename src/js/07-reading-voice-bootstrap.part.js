@@ -29,11 +29,30 @@
     let actionDone=!(actionPromise&&typeof actionPromise.then==='function'),actionError=null;
     if(!actionDone)Promise.resolve(actionPromise).then(()=>{actionDone=true;},err=>{actionDone=true;actionError=err;console.warn('Ação do Livro iniciada por voz falhou.',err);});
     for(;;){
-      const sectionChanged=appState.sectionId!==before.sectionId,currentKey=voiceSurfaceKeySafe(),surfaceChanged=!!currentKey&&currentKey!==before.surfaceKey;
-      if(sectionChanged||surfaceChanged)return {changed:true,error:null};
+      const sectionChanged=appState.sectionId!==before.sectionId,current=voiceCurrentSurface(),leftNarrativeSection=!!current&&current.kind!=='section'&&current.key!==before.surfaceKey;
+      if(sectionChanged||leftNarrativeSection)return {changed:true,error:null};
       if(actionDone)return {changed:false,error:actionError};
       await new Promise(resolve=>setTimeout(resolve,50));
     }
+  }
+  async function restartVoiceCycleAfterNavigation(previousSectionId){
+    appState.voiceContextKey='';
+    appState.voiceLastNarratedStoryKey='';
+    appState.voiceLastNarratedPromptKey='';
+    if(voiceScheduleTimer){clearTimeout(voiceScheduleTimer);voiceScheduleTimer=null;}
+    for(let i=0;i<120&&appState.readingAssistEnabled;i++){
+      const surface=voiceCurrentSurface();
+      const sectionChanged=appState.sectionId!==previousSectionId;
+      const ready=surface&&(surface.kind!=='section'||voiceSectionReady());
+      if(sectionChanged&&ready&&!voiceActionPending&&!appState.voiceSpeaking&&!appState.voiceListening&&!voiceMicStarting&&!appState.voiceRecognition&&!voiceSpeechBusy){
+        await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+        await runVoiceCycle(true);
+        return true;
+      }
+      await new Promise(resolve=>setTimeout(resolve,50));
+    }
+    scheduleVoiceCycle(true,120);
+    return false;
   }
   async function runVoiceNarrativeChoice(index){
     const sectionId=appState.sectionId,section=appState.book?.sections?.[sectionId],choice=section?.choices?.[index];
@@ -73,7 +92,7 @@
   function voiceTokens(v){return voiceNormalize(v).split(' ').filter(Boolean);}
   function voiceCandidateScore(input,candidate){const a=voiceNormalize(input),b=voiceNormalize(candidate);if(!a||!b)return 0;if(a===b)return 1;const at=voiceTokens(a),bt=voiceTokens(b),bs=new Set(bt),overlap=at.filter(t=>bs.has(t)).length,coverage=overlap/Math.max(1,at.length),precision=overlap/Math.max(1,bt.length),distance=levenshteinDistanceVoice(a,b)/Math.max(a.length,b.length,1),substring=b.includes(a)||a.includes(b);let score=.58*Math.max(coverage,precision)+.42*(1-distance);if(substring&&a.length>=3)score=Math.max(score,.84);return Math.min(1,score);}
   function rankedVoiceActions(transcript,actions=[]){return actions.map(action=>{const aliases=[action.label,...(action.aliases||[])];let score=0;for(const alias of aliases)score=Math.max(score,voiceCandidateScore(transcript,alias));return {action,score};}).sort((a,b)=>b.score-a.score);}
-  async function runResolvedVoiceAction(action){if(!action||voiceActionPending)return false;const before=appState.sectionId;cancelVoiceRecognition();voiceActionPending=true;syncVoiceUi();let actionError=null;try{await action.run?.();}catch(err){actionError=err;console.warn('Ação por voz falhou.',err);}finally{voiceActionPending=false;syncVoiceUi();}const advanced=appState.sectionId!==before;if(actionError&&!advanced){if(action.type!=='alternative')await voiceSpeak('A ação ficou indisponível.',{remember:false});else console.warn('Escolha narrativa por voz não concluiu.',actionError);if(appState.readingAssistEnabled){const surface=voiceCurrentSurface();if(surface?.actions?.length){appState.voiceContextKey=surface.key;await startVoiceListening(surface.actions,surface.key,surface.kind==='answer-input'?surface:null);}}return false;}appState.voiceContextKey='';appState.voiceLastNarratedPromptKey='';if(advanced)appState.voiceLastNarratedStoryKey='';scheduleVoiceCycle(true,180);return true;}
+  async function runResolvedVoiceAction(action){if(!action||voiceActionPending)return false;const before=appState.sectionId;cancelVoiceRecognition();voiceActionPending=true;syncVoiceUi();let actionError=null;try{await action.run?.();}catch(err){actionError=err;console.warn('Ação por voz falhou.',err);}finally{voiceActionPending=false;syncVoiceUi();}const advanced=appState.sectionId!==before;if(actionError&&!advanced){if(action.type!=='alternative')await voiceSpeak('A ação ficou indisponível.',{remember:false});else console.warn('Escolha narrativa por voz não concluiu.',actionError);if(appState.readingAssistEnabled){const surface=voiceCurrentSurface();if(surface?.actions?.length){appState.voiceContextKey=surface.key;await startVoiceListening(surface.actions,surface.key,surface.kind==='answer-input'?surface:null);}}return false;}if(advanced){await restartVoiceCycleAfterNavigation(before);return true;}appState.voiceContextKey='';appState.voiceLastNarratedPromptKey='';scheduleVoiceCycle(true,180);return true;}
   async function confirmVoiceAction(action,actions){await voiceSpeak(`Você quis escolher ${voiceCleanLabel(action.label)}? Diga sim ou cancelar.`,{remember:false});if(!appState.readingAssistEnabled)return;const confirm={type:'confirm',label:'Sim',aliases:['sim','confirmo','confirmar','isso','é isso','correto'],run:()=>runResolvedVoiceAction(action)},cancel={type:'cancel',label:'Cancelar',aliases:['não','nao','cancelar','voltar','outra opção','outra opcao'],run:async()=>{await voiceSpeak('Certo. Escolha novamente.',{remember:false});startVoiceListening(actions,appState.voiceContextKey);}};addVoiceOrdinalAliases(confirm,1);addVoiceOrdinalAliases(cancel,2);startVoiceListening([confirm,cancel],appState.voiceContextKey);}
   async function handleVoiceAnswerTranscript(transcript,surface){const spoken=voiceNormalize(transcript),ctx=appState.voiceAnswerContext;if(!ctx)return;if(/^(?:cancelar|voltar|desistir)$/.test(spoken)){cancelVoiceRecognition();ctx.cancel?.();return;}if(/^(?:repetir|repita|de novo|novamente)$/.test(spoken)){await voiceSpeak(surface.text,{remember:false});if(appState.readingAssistEnabled&&appState.voiceAnswerContext)startVoiceListening([],surface.key,surface);return;}cancelVoiceRecognition();ctx.submit?.(transcript);}
   async function handleVoiceTranscript(transcript,actions=[]){const spoken=voiceNormalize(transcript);if(!spoken){await voiceSpeak('Não consegui ouvir. Diga novamente.',{remember:false});startVoiceListening(actions,appState.voiceContextKey);return;}if(/^(?:cancelar|cancela|parar|pare)$/.test(spoken)){await voiceSpeak('Certo.',{remember:false});if(appState.readingAssistEnabled)startVoiceListening(actions,appState.voiceContextKey);return;}if(/^(?:repetir opcoes|repetir opcao|opcoes|opções|alternativas)$/.test(spoken)){await voiceSpeak(voicePromptForActions(actions),{remember:false});if(appState.readingAssistEnabled)startVoiceListening(actions,appState.voiceContextKey);return;}if(/^(?:repetir|repita|de novo|novamente)$/.test(spoken)){appState.voiceContextKey='';appState.voiceLastNarratedStoryKey='';appState.voiceLastNarratedPromptKey='';scheduleVoiceCycle(true,80);return;}if(/^(?:ajuda|comandos|o que posso dizer)$/.test(spoken)){await voiceSpeak('Diga o número da opção ou palavras que aparecem nela. Você também pode dizer repetir, opções ou cancelar.',{remember:false});if(appState.readingAssistEnabled)startVoiceListening(actions,appState.voiceContextKey);return;}const ranked=rankedVoiceActions(transcript,actions),best=ranked[0],second=ranked[1];if(best?.score>=.84&&(best.score-(second?.score||0)>=.10||best.score>=.94)){await runResolvedVoiceAction(best.action);return;}if(best?.score>=.58){if(second&&second.score>=.56&&best.score-second.score<.10){await voiceSpeak(`Fiquei em dúvida entre ${voiceCleanLabel(best.action.label)} e ${voiceCleanLabel(second.action.label)}. Diga um ou dois.`,{remember:false});const pair=[best.action,second.action];pair.forEach((a,i)=>addVoiceOrdinalAliases(a,i+1));startVoiceListening(pair,appState.voiceContextKey);return;}await confirmVoiceAction(best.action,actions);return;}await voiceSpeak('Não reconheci uma das opções disponíveis. Diga o número ou palavras da opção.',{remember:false});if(appState.readingAssistEnabled)startVoiceListening(actions,appState.voiceContextKey);}
