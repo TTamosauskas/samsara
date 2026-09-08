@@ -1,0 +1,36 @@
+name: Fix voice cycle restart
+
+on:
+  push:
+    branches: [fix-voice-cycle-restart]
+    paths:
+      - scripts/patch-voice-cycle-restart.py
+      - .github/workflows/fix-voice-cycle-restart.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-voice-cycle-restart
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python scripts/patch-voice-cycle-restart.py
+      - name: Validate source and build
+        run: |
+          npm run check
+          grep -q "restartVoiceCycleAfterNavigation" src/js/07-reading-voice-bootstrap.part.js
+          grep -q "current.kind!='section'" src/js/07-reading-voice-bootstrap.part.js
+      - name: Commit validated fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/js/07-reading-voice-bootstrap.part.js
+          git commit -m "fix: restart reading after spoken navigation"
+          git push origin HEAD:fix-voice-cycle-restart
