@@ -1,0 +1,38 @@
+name: Fix voice listening grace
+
+on:
+  push:
+    branches: [fix-voice-cycle-restart]
+    paths:
+      - scripts/patch-voice-listen-grace.py
+      - .github/workflows/fix-voice-listen-grace.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix-voice-cycle-restart
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply patch
+        run: python scripts/patch-voice-listen-grace.py
+      - name: Validate source and build
+        run: |
+          npm run check
+          grep -q "readyTimer=setTimeout" src/js/07-reading-voice-bootstrap.part.js
+          grep -q "},400);" src/js/07-reading-voice-bootstrap.part.js
+          grep -q "rec.onspeechstart" src/js/07-reading-voice-bootstrap.part.js
+          grep -q "retryAfterEarlySpeech" src/js/07-reading-voice-bootstrap.part.js
+      - name: Commit validated fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/js/07-reading-voice-bootstrap.part.js
+          git commit -m "fix: delay listening cue until capture is stable"
+          git push origin HEAD:fix-voice-cycle-restart
