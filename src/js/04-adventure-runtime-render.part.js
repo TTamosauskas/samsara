@@ -639,7 +639,7 @@ const storyBox=el('storyText');storyBox.removeAttribute('aria-label');storyBox.i
     if(action.reason){const reason=document.createElement('small');reason.className='action-unavailable-reason';reason.textContent=action.reason;b.appendChild(reason);b.title=action.reason;}
     b.disabled=!action.enabled;
     for(const [key,value] of Object.entries(action.dataset||{}))if(value!==undefined&&value!==null)b.dataset[key]=String(value);
-    b.onclick=()=>{if(action.enabled)return action.execute();};
+    b.onclick=()=>{if(!action.enabled)return;b._samsaraActionStarted=true;b._samsaraActionError=null;try{const result=action.execute();b._samsaraActionPromise=result;return result;}catch(err){b._samsaraActionError=err;throw err;}};
     return b;
   }
   function renderAvailableActions(container,actions,{choice=false,strategic=true}={}){
