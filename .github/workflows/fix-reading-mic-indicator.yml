@@ -22,7 +22,10 @@ jobs:
           node-version: 22
 
       - name: Apply patch
-        run: python scripts/patch-reading-mic-indicator.py
+        shell: bash
+        run: |
+          sed -i "/answer microphone await/d" scripts/patch-reading-mic-indicator.py
+          python scripts/patch-reading-mic-indicator.py
 
       - name: Validate behavior and build
         shell: bash
