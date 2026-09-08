@@ -1734,7 +1734,7 @@
   .audio-narrator-skull{position:absolute;left:50%;top:50%;z-index:3;transform:translate(-50%,-50%) scale(.82);opacity:0;font-size:clamp(64px,18vw,118px);line-height:1;pointer-events:none;filter:drop-shadow(0 4px 10px rgba(0,0,0,.82));transition:opacity .35s ease,transform .35s ease}
   .audio-narrator-visual.enemy-defeated .audio-narrator-skull{opacity:1;transform:translate(-50%,-50%) scale(1)}
   .audio-narrator-visual.enemy-defeated .audio-scene-image{filter:grayscale(100%) contrast(60%) saturate(50%) brightness(120%)}
-  body:not(.audio-mode) .voice-header-btn,body:not(.audio-mode) .voice-float-btn,body:not(.audio-mode) .voice-discovery-hint{display:none!important}
+  body:not(.audio-mode) .voice-header-btn,body:not(.audio-mode) .voice-discovery-hint{display:none!important}
   body.audio-mode:not(.editor) .voice-float-btn{display:none!important}
   body.audio-mode:not(.editor) .topbar{background:color-mix(in srgb,var(--topbar) 82%,transparent);backdrop-filter:blur(10px)}
   body.audio-mode:not(.editor).terrain-has-bg .main{background:transparent!important}
@@ -2477,9 +2477,10 @@
 
   /* v314.12.1 — Leitura unificada e restauração segura do Livro. */
   .voice-float-btn{display:none;position:fixed;z-index:138;left:max(14px,env(safe-area-inset-left));bottom:max(18px,calc(env(safe-area-inset-bottom) + 14px));width:56px;height:56px;padding:0;border:1px solid rgba(20,18,28,.22);border-radius:50%;background:rgba(255,255,255,.97);color:var(--ink);box-shadow:0 10px 28px rgba(20,18,28,.24);place-items:center;font-size:25px;line-height:1;cursor:pointer;backdrop-filter:blur(9px)}
-  body.reading-assist-enabled:not(.editor):not(.adventure-ended) .voice-float-btn{display:grid}
+  body.reading-assist-enabled:not(.editor) .voice-float-btn{display:grid!important}
   body.voice-speaking .voice-float-btn{background:color-mix(in srgb,var(--accent-soft) 72%,#fff)}
-  body.voice-listening .voice-float-btn{background:color-mix(in srgb,var(--accent-soft) 84%,#fff);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 18%,transparent),0 10px 28px rgba(20,18,28,.24)}
+  body.voice-mic-starting .voice-float-btn{animation:voiceListenPulse .82s ease-in-out infinite;opacity:.82;background:color-mix(in srgb,var(--accent-soft) 74%,#fff);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 12%,transparent),0 10px 28px rgba(20,18,28,.24)}
+  body.voice-listening .voice-float-btn{animation:voiceListenPulse .82s ease-in-out infinite;background:color-mix(in srgb,var(--accent-soft) 84%,#fff);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 18%,transparent),0 10px 28px rgba(20,18,28,.24)}
   .settings-reading-assist-help{margin:-2px 0 8px 28px;max-width:330px;color:var(--muted);font-size:11px;line-height:1.35}
   .settings-check.reading-locked,.settings-radio.reading-locked{opacity:.64}
   @media(max-width:520px){.voice-float-btn{width:54px;height:54px;font-size:24px}.settings-reading-assist-help{margin-left:26px}}
