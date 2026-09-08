@@ -26,7 +26,7 @@ jobs:
         run: |
           npm run check
           grep -q "restartVoiceCycleAfterNavigation" src/js/07-reading-voice-bootstrap.part.js
-          grep -q "current.kind!='section'" src/js/07-reading-voice-bootstrap.part.js
+          grep -q "current.kind!=='section'" src/js/07-reading-voice-bootstrap.part.js
       - name: Commit validated fix
         run: |
           git config user.name "github-actions[bot]"
